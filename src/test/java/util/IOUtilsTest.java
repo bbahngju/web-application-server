@@ -1,8 +1,10 @@
 package util;
 
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.IOException;
 import java.io.StringReader;
+import java.nio.file.Files;
 import java.sql.DataTruncation;
 
 import db.DataBase;
@@ -34,5 +36,11 @@ public class IOUtilsTest {
         DataBase.addUser(user2);
 
         assertThat(DataBase.findUserById("id_1"), is(user1));
+    }
+
+    @Test
+    public void printPage() throws IOException {
+        String pageData = new String(Files.readAllBytes(new File("./webapp" + "/user/list.html").toPath()));
+        logger.debug(pageData); //그냥 출력 잘 되는지 보려고 해봄ㅎㅎ
     }
 }
