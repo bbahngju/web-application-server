@@ -23,4 +23,21 @@ public class IOUtils {
         br.read(body, 0, contentLength);
         return String.copyValueOf(body);
     }
+
+    public static StringBuilder readUserList(Collection<User> userList) {
+        int idx = 3;
+        StringBuilder br = new StringBuilder();
+
+        for(User user : userList) {
+            br.append("<tr>");
+            br.append("\n");
+            br.append("<th scope=\"row\">").append(idx).append("</th> <td>").append(user.getUserId()).append("</td> <td>").append(user.getName()).append("</td> <td>").append(user.getEmail()).append("</td><td><a href=\"#\" class=\"btn btn-success\" role=\"button\">수정</a></td>");
+            br.append("</tr>");
+            br.append("\n");
+
+            idx++;
+        }
+
+        return br;
+    }
 }

@@ -68,6 +68,20 @@ public class RequestHandler extends Thread {
 
                 response302HeaderWithCookie(dos, redirectUrl, cookie);
             }
+            else if("/user/list".equals(url)) {
+                boolean isCookie = Boolean.parseBoolean(cookies.getOrDefault("logined", "false"));
+                if(!isCookie) {
+                    response302Header(dos, "/user/login");
+                }
+                Collection<User> userList = DataBase.findAll();
+                StringBuilder responseData = IOUtils.readUserList(userList);
+
+                String pageData = new String(Files.readAllBytes(new File("./webapp" + "/user/list.html").toPath()));
+                pageData = pageData.replace("inputUserList", URLDecoder.decode(responseData.toString(), "UTF-8"));
+                body = pageData.getBytes();
+                response200Header(dos, body.length);
+                responseBody(dos, body);
+            }
             else {
                 body = Files.readAllBytes(new File("./webapp" + url).toPath());
                 response200Header(dos, body.length);
