@@ -38,12 +38,16 @@ public class RequestHandler extends Thread {
             Map<String, String> headerInfo = HttpRequestUtils.parseHeader(br);
             int contentLength = Integer.parseInt(headerInfo.getOrDefault("Content-Length", "0"));
             String params = util.IOUtils.readData(br, contentLength);
+            String type = headerInfo.getOrDefault("Accept", null);
+            String responseType = "text/html";
             Map<String, String> cookies = util.HttpRequestUtils.parseCookies(headerInfo.getOrDefault("Cookie", null));
-            log.debug("cookie: " + cookies.get("logined"));
 
+            if(type.contains("text/css")) {
+                responseType = "text/css";
+            }
             if("/".equals(url)) {
                 body = "Welcome to My Page :>".getBytes();
-                response200Header(dos, body.length);
+                response200Header(dos, responseType, body.length);
                 responseBody(dos, body);
             }
             else if("/user/create".equals(url)) {
@@ -79,12 +83,12 @@ public class RequestHandler extends Thread {
                 String pageData = new String(Files.readAllBytes(new File("./webapp" + "/user/list.html").toPath()));
                 pageData = pageData.replace("inputUserList", URLDecoder.decode(responseData.toString(), "UTF-8"));
                 body = pageData.getBytes();
-                response200Header(dos, body.length);
+                response200Header(dos, responseType, body.length);
                 responseBody(dos, body);
             }
             else {
                 body = Files.readAllBytes(new File("./webapp" + url).toPath());
-                response200Header(dos, body.length);
+                response200Header(dos, responseType, body.length);
                 responseBody(dos, body);
             }
         } catch (IOException e) {
@@ -109,10 +113,10 @@ public class RequestHandler extends Thread {
         return user.getPassword().equals(password);
     }
 
-    private void response200Header(DataOutputStream dos, int lengthOfBodyContent) {
+    private void response200Header(DataOutputStream dos, String type, int lengthOfBodyContent) {
         try {
             dos.writeBytes("HTTP/1.1 200 OK \r\n");
-            dos.writeBytes("Content-Type: text/html;charset=utf-8 \r\n");
+            dos.writeBytes("Content-Type: " + type + ";charset=utf-8 \r\n");
             dos.writeBytes("Content-Length: " + lengthOfBodyContent + " \r\n");
             dos.writeBytes("\r\n");
         } catch (IOException e) {
