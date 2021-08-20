@@ -29,15 +29,14 @@ public class RequestHandler extends Thread {
                 connection.getPort());
 
         try (InputStream in = connection.getInputStream(); OutputStream out = connection.getOutputStream()) {
+            BufferedReader br = new BufferedReader(new InputStreamReader(in, "UTF-8"));
             DataOutputStream dos = new DataOutputStream(out);
-            BufferedReader br = new BufferedReader(new InputStreamReader(in));
 
-            String url = br.readLine().split(" ")[1];
+            String requestUrl = br.readLine().split(" ")[1];
 
             byte[] body;
             Map<String, String> headerInfo = HttpRequestUtils.parseHeader(br);
-            int contentLength = Integer.parseInt(headerInfo.getOrDefault("Content-Length", "0"));
-            String params = util.IOUtils.readData(br, contentLength);
+            int contentLength = Integer.parseInt(headerInfo.getOrDefault("Content-Length", "0").trim());
             String type = headerInfo.getOrDefault("Accept", null);
             String responseType = "text/html";
             Map<String, String> cookies = util.HttpRequestUtils.parseCookies(headerInfo.getOrDefault("Cookie", null));
@@ -45,51 +44,54 @@ public class RequestHandler extends Thread {
             if(type.contains("text/css")) {
                 responseType = "text/css";
             }
-            if("/".equals(url)) {
+            if("/".equals(requestUrl)) {
                 body = "Welcome to My Page :>".getBytes();
                 response200Header(dos, responseType, body.length);
                 responseBody(dos, body);
             }
-            else if("/user/create".equals(url)) {
+            else if("/user/create".equals(requestUrl)) {
+                String params = IOUtils.readData(br, contentLength);
                 User user = createUser(params);
                 DataBase.addUser(user);
                 response302Header(dos, "/index.html");
             }
-            else if("/user/login".equals(url)) {
+            else if("/user/login".equals(requestUrl)) {
+                String params = IOUtils.readData(br, contentLength);
                 Map<String, String> login = loginParams(params);
                 String checkId = login.getOrDefault("userId", null);
                 String checkPassword = login.getOrDefault("password", null);
-                String cookie, redirectUrl;
 
                 if(isAccessible(checkId, checkPassword)) {
-                    cookie = "logined=true";
-                    redirectUrl = "/index.html";
+                    response302LoginSuccessHeader(dos, "/index.html");
                 }
                 else {
-                    cookie = "logined=false";
-                    redirectUrl = "/user/login_failed.html";
+                    responseResource(dos, responseType, "/user/login_failed.html");
                 }
-
-                response302HeaderWithCookie(dos, redirectUrl, cookie);
             }
-            else if("/user/list".equals(url)) {
+            else if("/user/list".equals(requestUrl)) {
                 boolean isCookie = Boolean.parseBoolean(cookies.getOrDefault("logined", "false"));
                 if(!isCookie) {
-                    response302Header(dos, "/user/login");
+                    responseResource(dos, responseType, "/user/login.html");
+                    return;
                 }
-                Collection<User> userList = DataBase.findAll();
-                StringBuilder responseData = IOUtils.readUserList(userList);
+                Collection<User> users = DataBase.findAll();
+                StringBuilder sb = new StringBuilder();
+                sb.append("<table border='1'>");
+                for (User user : users) {
+                    sb.append("<tr>");
+                    sb.append("<td>" + user.getUserId() + "</td>");
+                    sb.append("<td>" + user.getName() + "</td>");
+                    sb.append("<td>" + user.getEmail() + "</td>");
+                    sb.append("</tr>");
+                }
+                sb.append("</table>");
 
-                String pageData = new String(Files.readAllBytes(new File("./webapp" + "/user/list.html").toPath()));
-                pageData = pageData.replace("inputUserList", URLDecoder.decode(responseData.toString(), "UTF-8"));
-                body = pageData.getBytes();
+                body = sb.toString().getBytes();
                 response200Header(dos, responseType, body.length);
                 responseBody(dos, body);
             }
             else {
-                body = Files.readAllBytes(new File("./webapp" + url).toPath());
-                response200Header(dos, responseType, body.length);
-                responseBody(dos, body);
+                responseResource(dos, responseType, requestUrl);
             }
         } catch (IOException e) {
             log.error(e.getMessage());
@@ -113,6 +115,12 @@ public class RequestHandler extends Thread {
         return user.getPassword().equals(password);
     }
 
+    private void responseResource(DataOutputStream dos, String responseType, String url) throws IOException {
+        byte[] body = Files.readAllBytes(new File("./webapp" + url).toPath());
+        response200Header(dos, responseType, body.length);
+        responseBody(dos, body);
+    }
+
     private void response200Header(DataOutputStream dos, String type, int lengthOfBodyContent) {
         try {
             dos.writeBytes("HTTP/1.1 200 OK \r\n");
@@ -134,10 +142,10 @@ public class RequestHandler extends Thread {
         }
     }
 
-    private void response302HeaderWithCookie(DataOutputStream dos, String url, String cookie) {
+    private void response302LoginSuccessHeader(DataOutputStream dos, String url) {
         try {
-            dos.writeBytes("HTTP/1.1 302 Found \r\n");
-            dos.writeBytes("Set-Cookie: " + cookie + " \r\n");
+            dos.writeBytes("HTTP/1.1 302 Redirect \r\n");
+            dos.writeBytes("Set-Cookie: logined=true \r\n");
             dos.writeBytes("Location: " + url + " \r\n");
             dos.writeBytes("\r\n");
         } catch (IOException e) {
