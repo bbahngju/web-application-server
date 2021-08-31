@@ -27,18 +27,18 @@ public class HttpRequest {
 
         log.debug("requestLine: " + line);
         method = line.split(" ")[0];
-        log.debug("method: " + method);
+
         if("GET".equals(method)) {
             parsePathAndParamsOfGet(line.split(" ")[1]);
         }
         else {
             path = line.split(" ")[1];
         }
-        log.debug("requestPath: " + path);
 
         line = br.readLine();
         while(!line.equals("")) {
             String[] tokens = line.split(": ");
+            log.debug("headers: " + line);
             headers.put(tokens[0].trim(), tokens[1].trim());
             line = br.readLine();
         }
@@ -84,5 +84,14 @@ public class HttpRequest {
 
     public String getParameter(String name) {
         return params.get(name);
+    }
+
+    public Boolean isCookie() {
+        if(headers.containsKey("Cookie")) {
+            log.debug("Cookie: true");
+            return true;
+        }
+        log.debug("Cookie: false");
+        return false;
     }
 }
