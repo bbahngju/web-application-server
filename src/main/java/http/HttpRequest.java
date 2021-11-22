@@ -1,17 +1,14 @@
-package model;
+package http;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import util.HttpRequestUtils;
 import util.IOUtils;
-import util.RequestLine;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 public class HttpRequest {
     private static final Logger log = LoggerFactory.getLogger(HttpRequest.class);

@@ -1,9 +1,8 @@
 package util;
 
-import model.HttpResponse;
+import http.HttpResponse;
 import org.junit.Test;
 
-import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.OutputStream;
