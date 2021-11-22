@@ -1,12 +1,11 @@
 package util;
 
-import model.HttpRequest;
+import http.HttpRequest;
 import org.junit.Test;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.*;
 
-import java.io.File;
 import java.io.FileInputStream;
 import java.io.InputStream;
 

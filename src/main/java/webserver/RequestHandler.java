@@ -5,9 +5,10 @@ import java.net.Socket;
 import java.util.Collection;
 import java.util.Map;
 
+import controller.Controller;
 import db.DataBase;
-import model.HttpRequest;
-import model.HttpResponse;
+import http.HttpRequest;
+import http.HttpResponse;
 import model.User;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -29,77 +30,24 @@ public class RequestHandler extends Thread {
             HttpRequest request = new HttpRequest(in);
             HttpResponse response = new HttpResponse(out);
 
-            String requestPath = request.getPath();
-            log.debug("requestPath: " + requestPath);
-            boolean isLogin = false;
+            Controller controller = RequestMapping.getController(request.getPath());
 
-            if("/".equals(requestPath)) {
-                response.forwardBody("Welcome to My Page :>");
-            }
-            else if("/user/create".equals(requestPath)) {
-                User user = createUser(request);
-                DataBase.addUser(user);
-                response.sendRedirect("/index.html");
-            }
-            else if("/user/login".equals(requestPath)) {
-                String checkId = request.getParameter("userId");
-                String checkPassword = request.getParameter("password");
-
-                if(isAccessible(checkId, checkPassword)) {
-                    response.addHeader("Set-Cookie", "logined=true");
-                    response.sendRedirect("/index.html");
-                }
-                else {
-                    response.addHeader("Set-Cookie", "logined=false");
-                    response.forward("/user/login_failed.html");
-                }
-            }
-            else if("/user/list".equals(requestPath)) {
-                if(request.isCookie()) {
-                    Map<String, String> cookies = util.HttpRequestUtils.parseCookies(request.getHeader("Cookie"));
-                    String login = cookies.getOrDefault("logined", null);
-                    if("true".equals(login)) {
-                        isLogin = true;
-                    }
-                }
-
-                if(!isLogin) {
-                    response.sendRedirect("/user/login.html");
-                    return;
-                }
-
-                Collection<User> users = DataBase.findAll();
-                StringBuilder sb = new StringBuilder();
-                sb.append("<table border='1'>");
-                for (User user : users) {
-                    sb.append("<tr>");
-                    sb.append("<td>").append(user.getUserId()).append("</td>");
-                    sb.append("<td>").append(user.getName()).append("</td>");
-                    sb.append("<td>").append(user.getEmail()).append("</td>");
-                    sb.append("</tr>");
-                }
-                sb.append("</table>");
-
-                response.forwardBody(sb.toString());
+            if(controller == null) {
+                String path = getDefaultPath(request.getPath());
+                response.forward(path);
             }
             else {
-                response.forward(requestPath);
+                controller.service(request, response);
             }
         } catch (IOException e) {
             log.error(e.getMessage());
         }
     }
 
-    private User createUser(HttpRequest request) {
-        return new User(request.getParameter("userId"), request.getParameter("password"),
-                request.getParameter("name"), request.getParameter("email"));
-    }
-
-    private boolean isAccessible(String id, String password) {
-        if(id == null || "".equals(id) || password == null || "".equals(password)) return false;
-        User user = DataBase.findUserById(id);
-        if(user == null) return false;
-
-        return user.getPassword().equals(password);
+    private String getDefaultPath(String path) {
+        if(path.equals("/")) {
+            return "/index.html";
+        }
+        return path;
     }
 }
