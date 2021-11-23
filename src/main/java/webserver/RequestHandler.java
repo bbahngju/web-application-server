@@ -2,14 +2,10 @@ package webserver;
 
 import java.io.*;
 import java.net.Socket;
-import java.util.Collection;
-import java.util.Map;
 
 import controller.Controller;
-import db.DataBase;
 import http.HttpRequest;
 import http.HttpResponse;
-import model.User;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
